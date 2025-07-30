@@ -6,10 +6,11 @@ public static class FeatureFlagHelper
 {
     public static bool IsFeatureEnabled<TFeatureFlag>(TFeatureFlag activeFeatures, TFeatureFlag feature) where TFeatureFlag : struct, Enum
     {
-        var featureValue = Convert.ToInt32(feature);
+        if (feature is FeaturesNoop)
+            return true;
 
-        return feature is FeaturesNoop ||
-               featureValue != 0 // 0 stands for None
-               && (feature.HasFlag(activeFeatures) || activeFeatures.HasFlag(feature));
+        var active = Convert.ToInt32(activeFeatures);
+        var target = Convert.ToInt32(feature);
+        return (active & target) != 0;
     }
 }
