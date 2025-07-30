@@ -30,6 +30,59 @@ Use this attribute to automatically register classes in the DI container.
 
 ---
 
+## `[ServiceWithOptions]`
+Use this attribute to automatically register classes with options from configuration in the DI container.
+
+### Parameters:
+- **Lifetime**: Defines the service registration lifetime (`Singleton`, `Scoped`, or `Transient`).
+- **ServiceType**: Specifies the service type for DI registration. If `null`, the service type is automatically resolved:
+  - From the first interface the class implements, or
+  - The class itself if no interfaces are implemented.
+- **Key** (`.NET 8+`): Specifies a key for keyed service registration.
+- **Feature** (optional): Specifies a feature flag to conditionally register the service.
+
+### How it works
+The `ServiceWithOptions` attribute requires a generic type that implements the `IServiceConfiguration` interface. This interface has a static abstract property `ConfigurationPath` that defines the path to the configuration section in `appsettings.json`.
+
+### Example
+
+**`appsettings.json`**
+```json
+{
+  "AppSettings": {
+    "Test": {
+      "Option1": "test12345"
+    }
+  }
+}
+```
+
+**`ServiceTestOptions.cs`**
+```csharp
+public class ServiceTestOptions : IServiceConfiguration
+{
+    public static string ConfigurationPath => "AppSettings:Test";
+
+    public string Option1 { get; set; } = "test123";
+}
+```
+
+**`TestServiceWithOptions.cs`**
+```csharp
+[ServiceWithOptions<ServiceTestOptions>]
+public class TestServiceWithOptions
+{
+    private readonly ServiceTestOptions _serviceConfiguration;
+
+    public TestServiceWithOptions(IOptions<ServiceTestOptions> options)
+    {
+        _serviceConfiguration = options.Value;
+    }
+
+    public string GetOption1Value() => _serviceConfiguration.Option1;
+}
+```
+
 ## `[Decorator]`
 Use this attribute to automatically register decorators for specific services.
 
@@ -38,6 +91,7 @@ Use this attribute to automatically register decorators for specific services.
 - **DecorationOrder**: Defines the order of decoration. Lower values are closer to the original implementation in the execution chain.
 - **Key** (`.NET 8+`): Specifies a key for keyed decorator registration.
 - **Feature** (optional): Specifies a feature flag to conditionally register the decorator.
+- **TreatOpenGenericsAsWildcard** (optional, `bool`): When set to `true`, the decorator will treat open generic service types as a wildcard, allowing it to decorate any closed generic implementation of that service.
 
 ---
 
