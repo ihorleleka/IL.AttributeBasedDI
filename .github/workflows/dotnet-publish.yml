@@ -36,10 +36,6 @@ jobs:
       run: dotnet pack --configuration Release --output ./nupkg /p:PackageVersion=$VERSION
       if: success() && github.ref_type == 'tag'
 
-    - name: Publish NuGet package to GitHub Packages
-      run: dotnet nuget push ./nupkg/*.nupkg --source https://nuget.pkg.github.com/ihorleleka/index.json --api-key ${{ secrets.GITHUB_TOKEN }}
-      if: success() && github.ref_type == 'tag'
-
     - name: Publish NuGet package to NuGet.org
       run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
       if: success() && github.ref_type == 'tag'
