@@ -15,8 +15,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IL.AttributeBasedDI\IL.AttributeBasedDI.csproj" />
-    <PackageReference Include="IL.VirtualViews" Version="1.7.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="IL.VirtualViews" Version="1.8.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
   
   <ItemGroup>
