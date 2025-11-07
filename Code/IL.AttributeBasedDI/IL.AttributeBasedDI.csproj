@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="IL.Misc" Version="1.4.0" />
+    <PackageReference Include="IL.Misc" Version="1.4.1" />
     <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
     <None Include="README.md" Pack="true" Visible="false" PackagePath="" />
     <None Include="$(OutputPath)\net8.0\$(AssemblyName).Analyzer.dll"
