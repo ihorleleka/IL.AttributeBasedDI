@@ -1,28 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Title>Attribute Based Dependency Injection Visualizer</Title>
-    <Description>Extension for IL.AttributeBasedDI</Description>
-    <PackageProjectUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</RepositoryUrl>
-  </PropertyGroup>
+    <PropertyGroup>
+        <Title>Attribute Based Dependency Injection Visualizer</Title>
+        <Description>Extension for IL.AttributeBasedDI</Description>
+        <PackageProjectUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/lelekaihor/IL.AttributeBasedDI.Visualizer</RepositoryUrl>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
-    <None Include="README.md" Pack="true" Visible="false" PackagePath="" />
-    <None Include="Views\DIRegistrationSummary.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\IL.AttributeBasedDI\IL.AttributeBasedDI.csproj" />
-    <PackageReference Include="IL.VirtualViews" Version="1.8.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <None Remove="Views\DIRegistrationSummary.virtual.cshtml" />
-    <AdditionalFiles Include="Views\DIRegistrationSummary.virtual.cshtml" />
-  </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App"/>
+        <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath=""/>
+        <None Include="README.md" Pack="true" Visible="false" PackagePath=""/>
+        <None Include="Views\DIRegistrationSummary.cs"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\IL.AttributeBasedDI\IL.AttributeBasedDI.csproj"/>
+        <PackageReference Include="IL.VirtualViews" Version="1.9.0.2"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.4"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Remove="Views\DIRegistrationSummary.virtual.cshtml"/>
+        <AdditionalFiles Include="Views\DIRegistrationSummary.virtual.cshtml"/>
+    </ItemGroup>
 
 
 </Project>
