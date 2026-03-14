@@ -41,5 +41,5 @@ public sealed class FeatureFlagSet
 
     public bool IsFeatureActive<TFeatureFlag>(TFeatureFlag feature) where TFeatureFlag : struct, Enum =>
         _activeFeatures.TryGetValue(typeof(TFeatureFlag), out var flags)
-        && feature.HasFlag(flags);
+        && flags.HasFlag(feature);
 }

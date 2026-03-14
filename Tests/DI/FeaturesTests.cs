@@ -19,6 +19,14 @@ public enum Features
     FeatureC = 1 << 2
 }
 
+[Flags]
+public enum AnotherOptionsEnum
+{
+    None = 0,
+    FeatureX = 1 << 0,
+    FeatureY = 1 << 1
+}
+
 [Service<Features>(Feature = Features.FeatureA)]
 public class Test1;
 
@@ -39,6 +47,12 @@ public class Test3Decorator : Test3;
 
 [Service<Features>(Feature = Features.FeatureA | Features.FeatureC)]
 public class TestMultipleFeatures;
+
+[Service<AnotherOptionsEnum>(Feature = AnotherOptionsEnum.FeatureX)]
+public class TestFeatureXService;
+
+[Service<AnotherOptionsEnum>(Feature = AnotherOptionsEnum.FeatureY)]
+public class TestFeatureYService;
 
 public class FeatureEnabledAttributesTests
 {
@@ -208,5 +222,83 @@ public class FeatureEnabledAttributesTests
         // Assert
         var service = sp.GetRequiredService<TestMultipleFeatures>();
         Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void MultipleFeatureEnumTypesSuccessfullyRegistered_OptionsAction()
+    {
+        // Arrange
+        var serviceCollection = new ServiceCollection();
+
+        var builder = new ConfigurationBuilder();
+        var configuration = builder.Build();
+
+        // Act
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.AddFeature(Features.FeatureA);
+                options.AddFeature(AnotherOptionsEnum.FeatureX);
+            }
+        );
+        var sp = serviceCollection.BuildServiceProvider();
+
+        // Assert
+        var serviceA = sp.GetRequiredService<Test1>();
+        Assert.NotNull(serviceA);
+        var serviceX = sp.GetRequiredService<TestFeatureXService>();
+        Assert.NotNull(serviceX);
+        var serviceY = sp.GetService<TestFeatureYService>();
+        Assert.Null(serviceY);
+    }
+
+    [Fact]
+    public void MultipleFeatureEnumTypesSuccessfullyRegistered_AppSettingsMapping()
+    {
+        // Arrange
+        var serviceCollection = new ServiceCollection();
+
+        // Act
+        var appSettings = """
+                          {
+                              "DIFeatureFlags": {
+                                "Features": ["FeatureA"],
+                                "AnotherOptionsEnum": ["FeatureX"]
+                              }
+                          }
+                          """;
+
+        var builder = new ConfigurationBuilder();
+        builder.AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(appSettings)));
+        var configuration = builder.Build();
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options =>
+            {
+                options.SetFeaturesFromConfig(new Dictionary<string, Type>
+                {
+                    { nameof(Features), typeof(Features) },
+                    { nameof(AnotherOptionsEnum), typeof(AnotherOptionsEnum) }
+                });
+            }
+        );
+        var sp = serviceCollection.BuildServiceProvider();
+
+        // Assert
+        var serviceA = sp.GetRequiredService<Test1>();
+        Assert.NotNull(serviceA);
+        var serviceX = sp.GetRequiredService<TestFeatureXService>();
+        Assert.NotNull(serviceX);
+        var serviceY = sp.GetService<TestFeatureYService>();
+        Assert.Null(serviceY);
+    }
+
+    [Fact]
+    public void FeatureFlagSet_IsFeatureActive_ReturnsTrueForIncludedFlag()
+    {
+        var featureSet = new FeatureFlagSet(Features.FeatureA | Features.FeatureC);
+
+        Assert.True(featureSet.IsFeatureActive(Features.FeatureA));
+        Assert.True(featureSet.IsFeatureActive(Features.FeatureC));
+        Assert.False(featureSet.IsFeatureActive(Features.FeatureB));
     }
 }
