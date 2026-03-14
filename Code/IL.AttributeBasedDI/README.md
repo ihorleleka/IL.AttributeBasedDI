@@ -165,90 +165,81 @@ public class Test
 ## Feature Flags
 > **Note:** Starting from version 2.0.0, you can conditionally register services and decorators based on feature flags.
 
-```csharp
+Feature-flag support in this library works as follows:
+- Feature enums used with `[Service<TFeatureFlag>]` / `[Decorator<TFeatureFlag>]` must be marked with `[Flags]`.
+- You can enable **multiple feature enum types** in the same registration call.
+- `AddFeature(...)` merges repeated calls for the **same enum type** using bitwise OR.
+- If an attribute declares multiple flags (e.g., `FeatureA | FeatureC`), registration is enabled when **at least one** of those flags is active.
 
+```csharp
 [Flags]
-public enum Features
+public enum SearchOptions
 {
     None = 0,
-    FeatureA = 1 << 0,
-    FeatureB = 1 << 1,
-    FeatureC = 1 << 2
+    Azure = 1 << 0,
+    Elastic = 1 << 1
 }
 
-[Service<Features>(Feature = Features.FeatureA)]
-class FeatureAService : IService {}
+[Flags]
+public enum AnotherOptionsEnum
+{
+    None = 0,
+    FeatureX = 1 << 0,
+    FeatureY = 1 << 1
+}
 
-[Service<Features>(Feature = Features.FeatureB)]
-class FeatureBService : IService {}
+[Service<SearchOptions>(Feature = SearchOptions.Azure)]
+class AzureSearchService : ISearchService {}
 
-[Decorator<Features>(Feature = Features.FeatureA)]
-class FeatureADecorator : IService {}
-
-[Decorator<Features>(Feature = Features.FeatureB)]
-class FeatureBDecorator : IService {}
-
+[Service<AnotherOptionsEnum>(Feature = AnotherOptionsEnum.FeatureX)]
+class FeatureXService : IFeatureService {}
 ```
 
+Enable flags in code:
 ```csharp
-
 var builder = WebApplication.CreateBuilder(args);
 
-// single feature type
-builder.AddServiceAttributeBasedDependencyInjection(configuration,
-    options => options.AddFeature(Features.FeatureA | Features.FeatureC)
-);
+builder.AddServiceAttributeBasedDependencyInjection(options =>
+{
+    options.AddFeature(SearchOptions.Azure);
+    options.AddFeature(AnotherOptionsEnum.FeatureX);
 
-//or multiple feature types
-builder.AddServiceAttributeBasedDependencyInjection(configuration,
-    options => {
-        options.AddFeature(Features.FeatureA | Features.FeatureC);
-        options.AddFeature(AnotherFeaturesEnum.FeatureA | AnotherFeaturesEnum.FeatureC);
-    }
-);
-
-// AddFeature will merge features of same type if called multiple times resulting same as bit operator invariant (FeatureA | FeatureC)
-builder.AddServiceAttributeBasedDependencyInjection(configuration,
-    options => {
-        options.AddFeature(Features.FeatureA);
-        options.AddFeature(Features.FeatureC);
-        options.AddFeature(AnotherFeaturesEnum.FeatureA);
-        options.AddFeature(AnotherFeaturesEnum.FeatureC);
-    }
-);
-
+    // same enum type is merged
+    options.AddFeature(SearchOptions.Elastic);
+});
 ```
-### or appsettings.json based:
+
+Enable flags from appsettings (including multiple enum types):
 ```json
 {
-    "DIFeatureFlags": {
-        "Features": ["FeatureA", "FeatureC"]
-    }
+  "DIFeatureFlags": {
+    "SearchOptions": ["Azure"],
+    "AnotherOptionsEnum": ["FeatureX"]
+  }
 }
 ```
-### and then you have to specify key/type mappings in options:
+
 ```csharp
+builder.AddServiceAttributeBasedDependencyInjection(options =>
+{
+    options.SetFeaturesFromConfig(new Dictionary<string, Type>
+    {
+        { nameof(SearchOptions), typeof(SearchOptions) },
+        { nameof(AnotherOptionsEnum), typeof(AnotherOptionsEnum) }
+    });
+});
 
-builder.AddServiceAttributeBasedDependencyInjection(configuration,
-            options => options.SetFeaturesFromConfig(
-                new Dictionary<string, Type>
-                {
-                    { nameof(Features), typeof(Features) }
-                }
-            );
-        );
-
-// you can also specify custom root object key in appsettings.json instead of "DIFeatureFlags"
-builder.AddServiceAttributeBasedDependencyInjection(configuration,
-            options => options.SetFeaturesFromConfig(
-                new Dictionary<string, Type>
-                {
-                    { nameof(Features), typeof(Features) }
-                },
-                "CustomRootObjectKeyInsteadOfDIFeatureFlags"
-            );
-        );
-
+// custom root section (instead of "DIFeatureFlags")
+builder.AddServiceAttributeBasedDependencyInjection(options =>
+{
+    options.SetFeaturesFromConfig(
+        new Dictionary<string, Type>
+        {
+            { nameof(SearchOptions), typeof(SearchOptions) },
+            { nameof(AnotherOptionsEnum), typeof(AnotherOptionsEnum) }
+        },
+        "CustomFeatureFlagsRoot");
+});
 ```
 
 ## Migration to Version 2.0.0
