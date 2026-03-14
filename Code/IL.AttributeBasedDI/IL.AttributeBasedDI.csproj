@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="IL.AttributeBasedDI.Tests" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="IL.Misc" Version="1.5.0.1" />
     <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
