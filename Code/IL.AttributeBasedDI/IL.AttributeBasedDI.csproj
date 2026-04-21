@@ -10,7 +10,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="IL.AttributeBasedDI.Tests" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
-    <PackageReference Include="IL.Misc" Version="1.5.0.1" />
+    <PackageReference Include="IL.Misc" Version="1.5.1.1" />
     <None Include="LICENSE.txt" Pack="true" Visible="false" PackagePath="" />
     <None Include="README.md" Pack="true" Visible="false" PackagePath="" />
     <None Include="$(OutputPath)\net8.0\$(AssemblyName).Analyzer.dll"
@@ -25,13 +25,13 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net9.0' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.15" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.15" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net10.0' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.6" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.6" />
   </ItemGroup>
 
   <ItemGroup>
