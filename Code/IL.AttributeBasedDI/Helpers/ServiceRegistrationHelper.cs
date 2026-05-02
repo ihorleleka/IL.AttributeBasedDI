@@ -20,6 +20,8 @@ internal static class ServiceRegistrationHelper
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
         var allTypes = GetAllTypesFromAssemblies(assemblies);
         serviceCollection.RegisterClassesWithServiceAttributes(diRegistrationSummary, activeFeatures, allTypes);
+        serviceCollection.RegisterImplementationInstances(diRegistrationSummary, activeFeatures, allTypes);
+        serviceCollection.RegisterHostedServices(diRegistrationSummary, activeFeatures, allTypes);
         serviceCollection.RegisterClassesWithServiceAttributesWithOptions(diRegistrationSummary, activeFeatures, configuration, allTypes);
         serviceCollection.RegisterClassesWithDecoratorAttributes(diRegistrationSummary, activeFeatures, throwWhenDecorationTypeNotFound, allTypes);
     }
@@ -44,8 +46,20 @@ internal static class ServiceRegistrationHelper
     {
         return assemblies
             .Where(assembly => !assembly.IsDynamic)
-            .SelectMany(TypesAndAssembliesHelper.GetExportedTypes)
+            .SelectMany(GetLoadableTypes)
             .Where(type => type is { IsAbstract: false })
             .ToArray();
+    }
+
+    private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+    {
+        try
+        {
+            return assembly.GetTypes();
+        }
+        catch (ReflectionTypeLoadException ex)
+        {
+            return ex.Types.Where(type => type is not null)!;
+        }
     }
 }

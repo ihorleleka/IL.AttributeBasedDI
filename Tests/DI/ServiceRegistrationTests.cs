@@ -3,6 +3,8 @@ using IL.AttributeBasedDI.Extensions;
 using IL.AttributeBasedDI.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System.Threading.Channels;
 using Xunit;
 
 namespace IL.AttributeBasedDI.Tests.DI;
@@ -42,6 +44,74 @@ public class OptionsProvier : IServiceConfiguration
 {
     public static string? ConfigurationPath { get; } = string.Empty;
 }
+
+public static class SpecializedInstanceFactory
+{
+    public static Channel<Func<IServiceProvider, CancellationToken, Task>> CreateBackgroundWorkDelegateChannel()
+        => Channel.CreateUnbounded<Func<IServiceProvider, CancellationToken, Task>>();
+
+    public static Channel<ContentRefreshBatchHostedService.WorkItem> CreateWorkItemChannel()
+        => Channel.CreateUnbounded<ContentRefreshBatchHostedService.WorkItem>();
+}
+
+public sealed class WorkItemChannelProvider : IImplementationInstanceProvider<Channel<ContentRefreshBatchHostedService.WorkItem>>
+{
+    public static Channel<ContentRefreshBatchHostedService.WorkItem> GetImplementationInstance()
+        => Channel.CreateUnbounded<ContentRefreshBatchHostedService.WorkItem>();
+}
+
+public sealed class BackgroundWorkDelegateChannelProvider : IImplementationInstanceProvider<Channel<Func<IServiceProvider, CancellationToken, Task>>>
+{
+    public static Channel<Func<IServiceProvider, CancellationToken, Task>> GetImplementationInstance()
+        => SpecializedInstanceFactory.CreateBackgroundWorkDelegateChannel();
+}
+
+[ImplementationInstanceFor<Channel<Func<IServiceProvider, CancellationToken, Task>>, BackgroundWorkDelegateChannelProvider>]
+public class BackgroundWorkDelegateChannelRegistrationMarker;
+
+[ImplementationInstanceFor<Channel<ContentRefreshBatchHostedService.WorkItem>, WorkItemChannelProvider>]
+public class WorkItemChannelRegistrationMarker;
+
+[ImplementationInstanceFor<Channel<ContentRefreshBatchHostedService.WorkItem>, WorkItemChannelProvider>]
+public class WorkItemChannelRegistrationMarkerWithGenericShorthand;
+
+public class BackgroundWorkSchedulerHostedService : BackgroundService
+{
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+}
+
+public class ContentRefreshBatchHostedService : BackgroundService
+{
+    public sealed class WorkItem;
+
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+}
+
+[Service(Lifetime = ServiceLifetime.Singleton, ServiceType = typeof(IContentRefreshWorkScheduler))]
+[ImplementationInstanceFor<
+    Channel<ContentRefreshBatchHostedServiceWithInlineAttributes.WorkItem>,
+    ContentRefreshBatchHostedServiceWithInlineAttributes>]
+[HostedService]
+internal sealed class ContentRefreshBatchHostedServiceWithInlineAttributes(
+    Channel<ContentRefreshBatchHostedServiceWithInlineAttributes.WorkItem> channel)
+    : BackgroundService, IContentRefreshWorkScheduler, IImplementationInstanceProvider<Channel<ContentRefreshBatchHostedServiceWithInlineAttributes.WorkItem>>
+{
+    public sealed class WorkItem;
+
+    public static Channel<WorkItem> GetImplementationInstance() => System.Threading.Channels.Channel.CreateUnbounded<WorkItem>();
+
+    public Channel<WorkItem> Channel { get; } = channel;
+
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+}
+
+public interface IContentRefreshWorkScheduler;
+
+[HostedService(typeof(BackgroundWorkSchedulerHostedService))]
+public class BackgroundWorkSchedulerHostedServiceRegistrationMarker;
+
+[HostedService<ContentRefreshBatchHostedService>]
+public class ContentRefreshBatchHostedServiceRegistrationMarker;
 
 public class ServiceRegistration
 {
@@ -91,5 +161,73 @@ public class ServiceRegistration
 
         var decorator3 = (OriginalNonKeyedServiceDecorator)decoratedNonKeyedService;
         Assert.Equal(typeof(OriginalNonKeyedService), decorator3.DecoratedService());
+    }
+
+    [Fact]
+    public void ImplementationInstanceAttributes_ShouldRegisterSingletonInstances()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
+        var sp = serviceCollection.BuildServiceProvider();
+
+        var workDelegateChannel = sp.GetRequiredService<Channel<Func<IServiceProvider, CancellationToken, Task>>>();
+        var workItemChannel = sp.GetRequiredService<Channel<ContentRefreshBatchHostedService.WorkItem>>();
+
+        Assert.NotNull(workDelegateChannel);
+        Assert.NotNull(workItemChannel);
+        Assert.Same(workDelegateChannel, sp.GetRequiredService<Channel<Func<IServiceProvider, CancellationToken, Task>>>());
+        Assert.Same(workItemChannel, sp.GetRequiredService<Channel<ContentRefreshBatchHostedService.WorkItem>>());
+    }
+
+    [Fact]
+    public void GenericImplementationInstanceShorthand_ShouldRegisterRequestedServiceType()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
+        var sp = serviceCollection.BuildServiceProvider();
+
+        var channel = sp.GetRequiredService<Channel<ContentRefreshBatchHostedService.WorkItem>>();
+        Assert.NotNull(channel);
+    }
+
+    [Fact]
+    public void HostedServiceAttributes_ShouldRegisterConcreteHostedServicesAndIHostedServiceEntries()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
+        var sp = serviceCollection.BuildServiceProvider();
+
+        var scheduler = sp.GetRequiredService<BackgroundWorkSchedulerHostedService>();
+        var batch = sp.GetRequiredService<ContentRefreshBatchHostedService>();
+        var hostedServices = sp.GetServices<IHostedService>().ToList();
+
+        Assert.NotNull(scheduler);
+        Assert.NotNull(batch);
+        Assert.Contains(scheduler, hostedServices);
+        Assert.Contains(batch, hostedServices);
+    }
+
+    [Fact]
+    public void SingleClass_CanHave_Service_ImplementationInstance_And_HostedService_Attributes()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration);
+        var sp = serviceCollection.BuildServiceProvider();
+
+        var scheduler = sp.GetRequiredService<IContentRefreshWorkScheduler>();
+        var channel = sp.GetRequiredService<Channel<ContentRefreshBatchHostedServiceWithInlineAttributes.WorkItem>>();
+        var hostedServices = sp.GetServices<IHostedService>().ToList();
+
+        Assert.NotNull(scheduler);
+        Assert.NotNull(channel);
+        Assert.Contains(hostedServices, service => service is ContentRefreshBatchHostedServiceWithInlineAttributes);
     }
 }

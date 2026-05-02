@@ -83,6 +83,67 @@ public class TestServiceWithOptions
 }
 ```
 
+## `[HostedService]`
+Use this attribute to register hosted services with `IHostedService` forwarding behavior:
+- Equivalent to `services.AddHostedService(sp => sp.GetRequiredService<TImplementation>())`.
+- If the implementation is already registered as singleton, the hosted registration reuses that singleton instance.
+
+### Parameters:
+- **ImplementationType** (optional): hosted service concrete type. If omitted, the decorated class is used.
+- **Lifetime** (optional): defaults to `Singleton`.
+
+### Example
+```csharp
+[HostedService<MyBackgroundService>]
+public class MyBackgroundServiceRegistrationMarker;
+```
+
+or directly on the hosted service:
+```csharp
+[HostedService]
+public class MyBackgroundService : BackgroundService
+{
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
+}
+```
+
+---
+
+## `[ImplementationInstanceFor<TService, TProvider>]`
+Use this attribute to register singleton implementation instances in a framework-like way (no `typeof(factory), nameof(method)` pairs).
+
+### Provider contract
+`TProvider` must implement:
+```csharp
+public interface IImplementationInstanceProvider<out TService>
+{
+    static abstract TService GetImplementationInstance();
+}
+```
+
+### Parameters:
+- **TService**: service type to register.
+- **TProvider**: provider type that exposes `GetImplementationInstance`.
+- **Key** (optional): keyed singleton registration key.
+
+Feature-flag variant is also available:
+- `[ImplementationInstanceFor<TService, TProvider, TFeatureFlag>]`
+
+### Example (`Channel<T>`)
+```csharp
+public sealed class WorkItemChannelProvider
+    : IImplementationInstanceProvider<Channel<MyHostedService.WorkItem>>
+{
+    public static Channel<MyHostedService.WorkItem> GetImplementationInstance()
+        => Channel.CreateUnbounded<MyHostedService.WorkItem>();
+}
+
+[ImplementationInstanceFor<Channel<MyHostedService.WorkItem>, WorkItemChannelProvider>]
+public class WorkItemChannelRegistrationMarker;
+```
+
+---
+
 ## `[Decorator]`
 Use this attribute to automatically register decorators for specific services.
 
@@ -159,6 +220,34 @@ public class Test
         // `randomSvc` resolves to `SampleServiceDefault`
         // `svc` resolves to `DecoratorA` wrapping `SampleService`
     }
+}
+```
+
+## Triple-Attribute Hosted Service Pattern
+
+Use all 3 attributes on one class to mimic:
+- `AddSingleton<IContentRefreshWorkScheduler, ContentRefreshBatchHostedService>()`
+- `AddSingleton(Channel.CreateUnbounded<WorkItem>())`
+- `AddHostedService(sp => sp.GetRequiredService<ContentRefreshBatchHostedService>())`
+
+```csharp
+[Service(Lifetime = ServiceLifetime.Singleton, ServiceType = typeof(IContentRefreshWorkScheduler))]
+[ImplementationInstanceFor<
+    Channel<ContentRefreshBatchHostedService.WorkItem>,
+    ContentRefreshBatchHostedService>]
+[HostedService]
+internal sealed class ContentRefreshBatchHostedService(
+    Channel<ContentRefreshBatchHostedService.WorkItem> channel)
+    : BackgroundService,
+      IContentRefreshWorkScheduler,
+      IImplementationInstanceProvider<Channel<ContentRefreshBatchHostedService.WorkItem>>
+{
+    public sealed class WorkItem;
+
+    public static Channel<WorkItem> GetImplementationInstance()
+        => Channel.CreateUnbounded<WorkItem>();
+
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) => Task.CompletedTask;
 }
 ```
 
