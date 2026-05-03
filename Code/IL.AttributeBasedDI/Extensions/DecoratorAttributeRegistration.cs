@@ -13,6 +13,14 @@ namespace IL.AttributeBasedDI.Extensions;
 internal static class DecoratorAttributeRegistration
 {
     private const string WildcardKey = "*";
+    
+    private sealed record DecorationRegistrationEntry<TFeatureFlag>(
+        string? Key,
+        int DecorationOrder,
+        TFeatureFlag Feature,
+        Type? ServiceType,
+        Type DecoratorImplementationType,
+        bool TreatOpenGenericsAsWildcard);
 
     public static void RegisterClassesWithDecoratorAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
         DiRegistrationSummary diRegistrationSummary,
@@ -26,19 +34,19 @@ internal static class DecoratorAttributeRegistration
             .Select(type =>
             {
                 var decoratorAttribute = type.GetCustomAttribute<DecoratorAttribute<TFeatureFlag>>();
-                return new
-                {
+                return new DecorationRegistrationEntry<TFeatureFlag>(
                     decoratorAttribute!.Key,
                     decoratorAttribute.DecorationOrder,
                     decoratorAttribute.Feature,
-                    ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute, true),
-                    DecoratorImplementationType = type,
-                    decoratorAttribute.TreatOpenGenericsAsWildcard
-                };
+                    ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute, true),
+                    type,
+                    decoratorAttribute.TreatOpenGenericsAsWildcard);
             })
             .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
             .OrderBy(x => x.DecorationOrder)
             .ToList();
+
+        ValidateDecoratorChainDoesNotContainDuplicates(serviceDecorations);
 
         foreach (var serviceDecorationEntry in CollectionsMarshal.AsSpan(serviceDecorations))
         {
@@ -50,6 +58,12 @@ internal static class DecoratorAttributeRegistration
                 }
 
                 throw new ServiceDecorationException($"Can't determine service to decorate. Decorator type: {serviceDecorationEntry.DecoratorImplementationType.FullName}");
+            }
+
+            if (IsSelfDecoration(serviceDecorationEntry.ServiceType, serviceDecorationEntry.DecoratorImplementationType))
+            {
+                throw new ServiceDecorationException(
+                    $"Self-decoration is not supported. Type '{serviceDecorationEntry.DecoratorImplementationType.FullName}' cannot decorate itself.");
             }
 
             serviceCollection.AddDecoratorForService(serviceDecorationEntry.ServiceType,
@@ -229,6 +243,106 @@ internal static class DecoratorAttributeRegistration
         return !serviceType.IsInterface
                && descriptor.ServiceType == serviceType
                && descriptor.ImplementationType == serviceType;
+    }
+
+    private static bool IsSelfDecoration(Type serviceType, Type decoratorImplementationType)
+    {
+        if (serviceType == decoratorImplementationType)
+        {
+            return true;
+        }
+
+        if (!serviceType.IsGenericType || !decoratorImplementationType.IsGenericType)
+        {
+            return false;
+        }
+
+        return serviceType.GetGenericTypeDefinition() == decoratorImplementationType.GetGenericTypeDefinition();
+    }
+
+    private static void ValidateDecoratorChainDoesNotContainDuplicates<TFeatureFlag>(
+        IReadOnlyList<DecorationRegistrationEntry<TFeatureFlag>> serviceDecorations)
+        where TFeatureFlag : struct, Enum
+    {
+        for (var i = 0; i < serviceDecorations.Count; i++)
+        {
+            var current = serviceDecorations[i];
+            for (var j = i + 1; j < serviceDecorations.Count; j++)
+            {
+                var next = serviceDecorations[j];
+                if (current.DecoratorImplementationType != next.DecoratorImplementationType)
+                {
+                    continue;
+                }
+
+                if (current.ServiceType == null || next.ServiceType == null)
+                {
+                    continue;
+                }
+
+                if (!IsSameServiceTarget(current.ServiceType, next.ServiceType))
+                {
+                    continue;
+                }
+
+                if (!CanKeysOverlap(current.Key, next.Key))
+                {
+                    continue;
+                }
+
+                throw new ServiceDecorationException(
+                    $"Decorator '{current.DecoratorImplementationType.FullName}' appears more than once in the same decoration chain for service '{current.ServiceType.FullName}'.");
+            }
+        }
+    }
+
+    private static bool IsSameServiceTarget(Type currentServiceType, Type nextServiceType)
+    {
+        if (currentServiceType == nextServiceType)
+        {
+            return true;
+        }
+
+        return currentServiceType.IsGenericType
+               && nextServiceType.IsGenericType
+               && currentServiceType.GetGenericTypeDefinition() == nextServiceType.GetGenericTypeDefinition();
+    }
+
+    private static bool CanKeysOverlap(string? keyA, string? keyB)
+    {
+        var isEmptyA = string.IsNullOrEmpty(keyA);
+        var isEmptyB = string.IsNullOrEmpty(keyB);
+        if (isEmptyA || isEmptyB)
+        {
+            return isEmptyA && isEmptyB;
+        }
+
+        if (keyA == keyB)
+        {
+            return true;
+        }
+
+        var nonNullKeyA = keyA!;
+        var nonNullKeyB = keyB!;
+        var keyAIsWildcard = IsWildcardKey(nonNullKeyA);
+        var keyBIsWildcard = IsWildcardKey(nonNullKeyB);
+
+        if (keyAIsWildcard && keyBIsWildcard)
+        {
+            return nonNullKeyA.MatchesWildcard(nonNullKeyB) || nonNullKeyB.MatchesWildcard(nonNullKeyA);
+        }
+
+        if (keyAIsWildcard)
+        {
+            return nonNullKeyB.MatchesWildcard(nonNullKeyA);
+        }
+
+        if (keyBIsWildcard)
+        {
+            return nonNullKeyA.MatchesWildcard(nonNullKeyB);
+        }
+
+        return false;
     }
 
     private static bool IsWildcardKey(string key)
