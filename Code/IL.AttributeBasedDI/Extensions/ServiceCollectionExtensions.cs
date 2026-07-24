@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         var options = new FeatureBasedDIOptions(configuration);
         configureOptions?.Invoke(options);
         serviceCollection.AddSingleton(Microsoft.Extensions.Options.Options.Create(options.ActiveFeatures));
+        serviceCollection.AddSingleton(options);
 
         var methodInfo = typeof(ServiceRegistrationHelper)
             .GetMethod(nameof(ServiceRegistrationHelper.RegisterClassesWithServiceAttributeAndDecorators));
