@@ -22,10 +22,12 @@ public class SelfDecoratingService;
 public class ChainRootService;
 
 [Decorator<DecoratorValidationFeature>(typeof(ChainRootService), DecorationOrder = 1, Feature = DecoratorValidationFeature.Enabled)]
-public class ChainDecoratorA1(ChainRootService source) : ChainRootService;
+#pragma warning disable CS9113 // Parameter is unread.
+public class ChainDecoratorA1(ChainRootService _) : ChainRootService;
 
 [Decorator<DecoratorValidationFeature>(typeof(ChainRootService), DecorationOrder = 2, Feature = DecoratorValidationFeature.Enabled)]
-public class ChainDecoratorB(ChainRootService source) : ChainRootService;
+public class ChainDecoratorB(ChainRootService _) : ChainRootService;
+#pragma warning restore CS9113 // Parameter is unread.
 
 public class DecoratorValidationTests
 {

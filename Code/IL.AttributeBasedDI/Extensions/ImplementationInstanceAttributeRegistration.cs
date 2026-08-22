@@ -16,7 +16,7 @@ internal static class ImplementationInstanceAttributeRegistration
     {
         var registrations = types
             .SelectMany(type => type.GetCustomAttributes(false).OfType<IImplementationInstanceRegistration<TFeatureFlag>>())
-            .Where(attribute => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, attribute.Feature))
+            .Where(attribute => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, attribute.Feature, attribute.FeatureMatchMode))
             .ToList();
 
         foreach (var attribute in CollectionsMarshal.AsSpan(registrations))

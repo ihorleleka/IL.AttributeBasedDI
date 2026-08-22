@@ -10,6 +10,8 @@ public interface IImplementationInstanceRegistration<TFeatureFlag> where TFeatur
 
     TFeatureFlag Feature { get; }
 
+    FeatureMatchMode FeatureMatchMode { get; }
+
     object CreateInstance();
 }
 

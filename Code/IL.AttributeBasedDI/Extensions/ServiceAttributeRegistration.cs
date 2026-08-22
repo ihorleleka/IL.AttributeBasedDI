@@ -22,7 +22,7 @@ internal static class ServiceAttributeRegistration
                     .GetCustomAttributes<ServiceAttribute<TFeatureFlag>>()
                     .Select(attribute => ToRegistrationEntry(attribute, type))
             )
-            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
+            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature, x.FeatureMatchMode))
             .ToList();
 
         foreach (var serviceRegistrationEntry in CollectionsMarshal.AsSpan(serviceRegistrations))
@@ -55,7 +55,8 @@ internal static class ServiceAttributeRegistration
             Lifetime = attribute.Lifetime,
             ServiceType = ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, attribute),
             ImplementationType = type,
-            Feature = attribute.Feature
+            Feature = attribute.Feature,
+            FeatureMatchMode = attribute.FeatureMatchMode
         };
     }
 

@@ -1,6 +1,7 @@
 using System.Text;
 using IL.AttributeBasedDI.Attributes;
 using IL.AttributeBasedDI.FeatureFlags;
+using IL.AttributeBasedDI.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -31,13 +32,18 @@ public enum AnotherOptionsEnum
 public class Test1;
 
 [Decorator<Features>(Feature = Features.None)]
-public class Test1InactiveDecorator1(Test1 source) : Test1;
+#pragma warning disable CS9113 // Parameter is unread.
+public class Test1InactiveDecorator1(Test1 _) : Test1;
 
 [Decorator<Features>(Feature = Features.FeatureB)]
-public class Test1InactiveDecorator2(Test1 source) : Test1;
+public class Test1InactiveDecorator2(Test1 _) : Test1;
+#pragma warning restore CS9113 // Parameter is unread.
 
 [Service<Features>(Feature = Features.FeatureB)]
 public class Test2;
+
+[Service<Features>(Feature = Features.FeatureA, FeatureMatchMode = FeatureMatchMode.Inactive)]
+public class TestWhenFeatureAIsDisabled;
 
 [Service<Features>(Feature = Features.FeatureC)]
 public class Test3;
@@ -135,6 +141,32 @@ public class FeatureEnabledAttributesTests
         Assert.Null(service2);
         var service3 = sp.GetService<Test3>();
         Assert.NotNull(service3);
+    }
+
+    [Fact]
+    public void ServiceWithDisabledFeatureIsRegistered_WhenFeatureIsInactive()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.AddFeature(Features.FeatureB));
+        var sp = serviceCollection.BuildServiceProvider();
+
+        Assert.NotNull(sp.GetRequiredService<TestWhenFeatureAIsDisabled>());
+    }
+
+    [Fact]
+    public void ServiceWithDisabledFeatureIsNotRegistered_WhenFeatureIsActive()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.AddFeature(Features.FeatureA));
+        var sp = serviceCollection.BuildServiceProvider();
+
+        Assert.Null(sp.GetService<TestWhenFeatureAIsDisabled>());
     }
 
     [Fact]

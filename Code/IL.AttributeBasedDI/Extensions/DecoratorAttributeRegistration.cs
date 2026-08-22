@@ -18,6 +18,7 @@ internal static class DecoratorAttributeRegistration
         string? Key,
         int DecorationOrder,
         TFeatureFlag Feature,
+        FeatureMatchMode FeatureMatchMode,
         Type? ServiceType,
         Type DecoratorImplementationType,
         bool TreatOpenGenericsAsWildcard);
@@ -38,11 +39,12 @@ internal static class DecoratorAttributeRegistration
                     decoratorAttribute!.Key,
                     decoratorAttribute.DecorationOrder,
                     decoratorAttribute.Feature,
+                    decoratorAttribute.FeatureMatchMode,
                     ServiceRegistrationHelper.GetServiceTypeBasedOnDependencyInjectionAttribute(type, decoratorAttribute, true),
                     type,
                     decoratorAttribute.TreatOpenGenericsAsWildcard);
             })
-            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
+            .Where(x => FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature, x.FeatureMatchMode))
             .OrderBy(x => x.DecorationOrder)
             .ToList();
 

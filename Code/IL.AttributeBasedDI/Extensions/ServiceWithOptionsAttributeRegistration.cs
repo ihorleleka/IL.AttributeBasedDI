@@ -33,7 +33,7 @@ internal static class ServiceWithOptionsAttributeRegistration
                         return @base?.ToRegistrationEntry(type);
                     });
             })
-            .Where(x => x != null && FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature))
+            .Where(x => x != null && FeatureFlagHelper.IsFeatureEnabled(activeFeatures, x.Feature, x.FeatureMatchMode))
             .ToList();
 
         foreach (var serviceRegistrationEntry in CollectionsMarshal.AsSpan(serviceRegistrations))

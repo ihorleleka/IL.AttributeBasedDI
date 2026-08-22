@@ -13,4 +13,6 @@ internal sealed class RegistrationEntry<TFeatureFlag> where TFeatureFlag : struc
     public string? Key { get; init; }
 
     public TFeatureFlag Feature { get; set; }
+
+    public FeatureMatchMode FeatureMatchMode { get; set; } = FeatureMatchMode.Active;
 }

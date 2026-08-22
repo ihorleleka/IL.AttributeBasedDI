@@ -260,6 +260,7 @@ Feature-flag support in this library works as follows:
 - You can enable **multiple feature enum types** in the same registration call.
 - `AddFeature(...)` merges repeated calls for the **same enum type** using bitwise OR.
 - If an attribute declares multiple flags (e.g., `FeatureA | FeatureC`), registration is enabled when **at least one** of those flags is active.
+- Use `FeatureMatchMode = FeatureMatchMode.Inactive` to register a service, decorator, or supported attribute when the specified feature is inactive.
 
 ```csharp
 [Flags]
