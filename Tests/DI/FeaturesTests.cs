@@ -31,6 +31,11 @@ public enum AnotherOptionsEnum
 [Service<Features>(Feature = Features.FeatureA)]
 public class Test1;
 
+[Decorator]
+#pragma warning disable CS9113 // Parameter is unread.
+public class Test1NoopDecorator(Test1 _) : Test1;
+#pragma warning restore CS9113 // Parameter is unread.
+
 [Decorator<Features>(Feature = Features.None)]
 #pragma warning disable CS9113 // Parameter is unread.
 public class Test1InactiveDecorator1(Test1 _) : Test1;
@@ -141,6 +146,19 @@ public class FeatureEnabledAttributesTests
         Assert.Null(service2);
         var service3 = sp.GetService<Test3>();
         Assert.NotNull(service3);
+    }
+
+    [Fact]
+    public void NoOpDecoratorDecoratesServicesRegisteredByFeature()
+    {
+        var serviceCollection = new ServiceCollection();
+        var configuration = new ConfigurationBuilder().Build();
+
+        serviceCollection.AddServiceAttributeBasedDependencyInjection(configuration,
+            options => options.AddFeature(Features.FeatureA));
+        var serviceProvider = serviceCollection.BuildServiceProvider();
+
+        Assert.IsType<Test1NoopDecorator>(serviceProvider.GetRequiredService<Test1>());
     }
 
     [Fact]

@@ -10,11 +10,10 @@ namespace IL.AttributeBasedDI.Helpers;
 
 internal static class ServiceRegistrationHelper
 {
-    public static void RegisterClassesWithServiceAttributeAndDecorators<TFeatureFlag>(this IServiceCollection serviceCollection,
+    public static void RegisterClassesWithServiceAttributes<TFeatureFlag>(this IServiceCollection serviceCollection,
         DiRegistrationSummary diRegistrationSummary,
         TFeatureFlag activeFeatures,
         IConfiguration configuration,
-        bool throwWhenDecorationTypeNotFound,
         params string[] assemblyFilters) where TFeatureFlag : struct, Enum
     {
         var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
@@ -23,7 +22,18 @@ internal static class ServiceRegistrationHelper
         serviceCollection.RegisterImplementationInstances(diRegistrationSummary, activeFeatures, allTypes);
         serviceCollection.RegisterHostedServices(diRegistrationSummary, activeFeatures, allTypes);
         serviceCollection.RegisterClassesWithServiceAttributesWithOptions(diRegistrationSummary, activeFeatures, configuration, allTypes);
-        serviceCollection.RegisterClassesWithDecoratorAttributes(diRegistrationSummary, activeFeatures, throwWhenDecorationTypeNotFound, allTypes);
+    }
+
+    public static void RegisterDecorators<TFeatureFlag>(this IServiceCollection serviceCollection,
+        DiRegistrationSummary diRegistrationSummary,
+        TFeatureFlag activeFeatures,
+        bool throwWhenDecorationTypeNotFound,
+        params string[] assemblyFilters) where TFeatureFlag : struct, Enum
+    {
+        var assemblies = TypesAndAssembliesHelper.GetAssemblies(assemblyFilters);
+        var allTypes = GetAllTypesFromAssemblies(assemblies);
+        serviceCollection.RegisterClassesWithDecoratorAttributes(diRegistrationSummary, activeFeatures,
+            throwWhenDecorationTypeNotFound, allTypes);
     }
 
     public static Type? GetServiceTypeBasedOnDependencyInjectionAttribute<TFeatureFlag>(Type sourceType,
