@@ -18,8 +18,6 @@ Runtime package dependencies use bounded NuGet ranges on both .NET 10 and .NET 1
 
 | Package | Inclusive minimum | Exclusive maximum |
 | --- | --- | --- |
-| IL.Misc (core) | 1.5.1.2 | 3.0.0 |
-| IL.VirtualViews (Visualizer) | 1.9.2.4 | 3.0.0 |
 | Newtonsoft.Json (Visualizer) | 13.0.4 | 14.0.0 |
 
 Consumers can select a compatible version inside these windows with a direct package reference or a centrally managed version (and a direct reference or central transitive pinning where needed). These are non-floating ranges: NuGet normally resolves the lowest applicable version, not automatically the latest. Versions outside the windows are not supported by these dependency declarations. ASP.NET Core remains SDK-managed through a framework reference; private compiler/analyzer and test tools keep fixed versions.
