@@ -1,12 +1,9 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>2.9.2.1</Version>
-    <PackageVersion>$(Version)</PackageVersion>
-    <AssemblyVersion>$(Version)</AssemblyVersion>
-    <FileVersion>$(Version)</FileVersion>
     
     <!-- Common package properties that can be shared across all projects -->
     <Authors>Ihor Leleka</Authors>

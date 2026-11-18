@@ -1,7 +1,14 @@
 # IL.AttributeBasedDI
 Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection.
 
-> **Note:** Starting from version **2.0.0**, only **.NET 8 or higher** is supported.
+> **Current targets:** .NET 10 and .NET 11. The bundled Roslyn analyzer remains `netstandard2.0` and uses Roslyn 5.0 APIs to support SDK 10 and SDK 11 compilers.
+
+Build all targets with the .NET 11 SDK. Running the complete test suite also requires the .NET 10 runtime:
+
+```shell
+dotnet build --configuration Release
+dotnet test --configuration Release --no-build --no-restore
+```
 
 ---
 
@@ -333,4 +340,4 @@ builder.AddServiceAttributeBasedDependencyInjection(options =>
 
 ## Migration to Version 2.0.0
 
-Starting from version 2.0.0, only .NET 8 or higher is supported. If you're upgrading from an earlier version, ensure your project targets .NET 8 or higher.
+Version 2.0.0 originally raised the minimum to .NET 8. The current build targets .NET 10 and .NET 11; use a compatible older package release if your application still targets .NET 8 or .NET 9.

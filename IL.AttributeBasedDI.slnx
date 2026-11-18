@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="Directory.Build.props" />
     <File Path="Code\Directory.Build.props" />
   </Folder>
   <Project Path="Code/IL.AttributeBasedDI.Analyzer/IL.AttributeBasedDI.Analyzer.csproj" />

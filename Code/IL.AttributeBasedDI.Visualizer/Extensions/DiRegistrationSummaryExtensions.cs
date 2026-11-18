@@ -10,7 +10,7 @@ public static class DiRegistrationSummaryExtensions
     public static void AddVisualizer(this DiRegistrationSummary summary)
     {
         summary.Services.AddVirtualViewsCapabilities("*");
-        summary.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
+        summary.Services.AddControllersWithViews();
         summary.Services.AddKeyedSingleton(Constants.ServiceGraphKey, summary.ServiceGraph);
         summary.Services.AddKeyedSingleton<IViewRenderService, ViewRenderService>(Constants.ViewRendererServiceKey);
     }

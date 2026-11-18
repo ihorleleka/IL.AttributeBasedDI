@@ -10,32 +10,50 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v3
+    permissions:
+      id-token: write
+      contents: read
 
-    - name: Set Version Variable
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Test release version parser
+      shell: pwsh
+      run: ./.github/scripts/Test-ReleaseVersion.ps1
+
+    - name: Validate and export release version
       if: ${{ github.ref_type == 'tag' }}
+      shell: pwsh
       env:
-        TAG: ${{ github.ref_name }}
-      run: echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+        RELEASE_TAG: ${{ github.ref_name }}
+      run: ./.github/scripts/Set-ReleaseVersion.ps1 -Tag $env:RELEASE_TAG
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: |
-          9.0.x
-          8.0.x
+          10.0.x
+          11.0.x
 
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build
-      run: dotnet build --no-restore --configuration Release /p:Version=$VERSION
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test both target frameworks
+      run: dotnet test --no-build --no-restore --configuration Release
 
     - name: Pack NuGet package
-      run: dotnet pack --configuration Release --output ./nupkg /p:PackageVersion=$VERSION
+      run: dotnet pack --no-build --no-restore --configuration Release --output ./nupkg
       if: success() && github.ref_type == 'tag'
 
+    - name: NuGet login
+      id: login
+      uses: NuGet/login@v1.2.0
+      with:
+        user: ihorleleka
+
     - name: Publish NuGet package to NuGet.org
-      run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }}
+      run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --skip-duplicate
       if: success() && github.ref_type == 'tag'

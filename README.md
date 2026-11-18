@@ -2,7 +2,39 @@
 # IL.AttributeBasedDI
 Control dependencies and decorators via custom attributes - extends Microsoft.Extensions.DependencyInjection.
 
-> **Note:** Starting from version **2.0.0**, only **.NET 8 or higher** is supported.
+> **Current targets:** .NET 10 and .NET 11. The bundled Roslyn analyzer remains `netstandard2.0` and uses Roslyn 5.0 APIs so it can load in both SDK 10 and SDK 11 compilers.
+
+## Release versions
+
+The tag-only publishing workflow validates the Git tag before restore and derives all package, assembly, file, and informational versions from it. Tags accept an optional `v`, three or four numeric components, and optional prerelease/build metadata, for example `v3.0.1-rc.1+build.7` or `3.0.1.2`. The core and Visualizer packages use the same tag-derived version, including the generated Visualizer dependency on core. Invalid tags fail before packaging; publishing remains restricted to tag builds.
+
+NuGet normalizes package filenames and dependency minimums by omitting build metadata; the package manifest and informational version retain it. Assembly/file versions use the numeric core, padded to four components when needed.
+
+Ordinary branch builds default to the harmless `0.0.0-dev` version. Explicit command-line MSBuild version properties remain supported. No hardcoded release-version bump in project files is needed.
+
+## Consumer dependency versions
+
+Runtime package dependencies use bounded NuGet ranges on both .NET 10 and .NET 11:
+
+| Package | Inclusive minimum | Exclusive maximum |
+| --- | --- | --- |
+| IL.Misc (core) | 1.5.1.2 | 3.0.0 |
+| IL.VirtualViews (Visualizer) | 1.9.2.4 | 3.0.0 |
+| Newtonsoft.Json (Visualizer) | 13.0.4 | 14.0.0 |
+
+Consumers can select a compatible version inside these windows with a direct package reference or a centrally managed version (and a direct reference or central transitive pinning where needed). These are non-floating ranges: NuGet normally resolves the lowest applicable version, not automatically the latest. Versions outside the windows are not supported by these dependency declarations. ASP.NET Core remains SDK-managed through a framework reference; private compiler/analyzer and test tools keep fixed versions.
+
+## Build and test
+
+Install the .NET 11 SDK to build all targets, plus the .NET 10 runtime to run the full test suite:
+
+```shell
+dotnet restore
+dotnet build --configuration Release --no-restore
+dotnet test --configuration Release --no-build --no-restore
+```
+
+Tests run separately on `net10.0` and `net11.0`. ASP.NET Core APIs come from each target's shared framework; no cross-major framework package pins are needed. The analyzer deliberately uses Microsoft.CodeAnalysis.CSharp 5.0.0 instead of newer Roslyn APIs that SDK 10 cannot load.
 
 ---
 
@@ -335,4 +367,4 @@ builder.AddServiceAttributeBasedDependencyInjection(options =>
 
 ## Migration to Version 2.0.0
 
-Starting from version 2.0.0, only .NET 8 or higher is supported. If you're upgrading from an earlier version, ensure your project targets .NET 8 or higher.
+Version 2.0.0 originally raised the minimum to .NET 8. The current build targets .NET 10 and .NET 11; use a compatible older package release if your application still targets .NET 8 or .NET 9.

@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+        <!-- Analyzers run inside the compiler, independently of the consuming project's TFM. -->
         <TargetFramework>netstandard2.0</TargetFramework>
-        <!-- For whatever reason ImportDirectoryBuildProps: false has no effect and I have to override TargetFrameworks with empty entry -->
         <TargetFrameworks></TargetFrameworks>
         <IsPackable>false</IsPackable>
         <Nullable>enable</Nullable>
@@ -18,11 +17,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0"/>
+        <!-- SDK 10 hosts Roslyn 5.0; newer compiler APIs would prevent loading in .NET 10 consumers. -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
     </ItemGroup>
 
 </Project>
